@@ -42,3 +42,9 @@
 
 # .vscode
 .vscode/
+
+# data
+data/
+
+# txt files
+*.txt
