@@ -33,9 +33,11 @@
 *.lib
 
 # Executables
-*.exe
 *.out
 *.app
+
+# Build artifacts (except releases)
+build/*.exe
 
 # debug information files
 *.dwo
@@ -48,3 +50,6 @@ data/
 
 # txt files
 *.txt
+
+# build
+build/
