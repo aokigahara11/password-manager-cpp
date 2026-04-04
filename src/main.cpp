@@ -86,7 +86,7 @@ int mainMenu(PasswordManager& pm) {
 }
 
 int main() {
-    const std::string master_key_file = "src/data/master_key.txt";
+    const std::string master_key_file = "../src/data/master_key.txt";
 
     if (!FileManager::fileExists(master_key_file)) {
         if (MasterKeyManager::firstRun() != 0) return 1;

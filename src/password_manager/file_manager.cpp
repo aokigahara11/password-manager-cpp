@@ -3,7 +3,7 @@
 #include <filesystem>
 
 bool FileManager::createMasterKeyFile(const std::string& masterKey) {
-    std::string dir_path = "src/data";
+    std::string dir_path = "../src/data";
     if (!std::filesystem::exists(dir_path)) {
         std::filesystem::create_directories(dir_path);
     }

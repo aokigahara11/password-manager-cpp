@@ -4,7 +4,7 @@
 #include "utils/clipboard_manager.h"
 #include <iostream>
 
-const std::string MasterKeyManager::MASTER_KEY_FILE = "src/data/master_key.txt";
+const std::string MasterKeyManager::MASTER_KEY_FILE = "../src/data/master_key.txt";
 
 int MasterKeyManager::firstRun() {
     std::cout << "Welcome to password-manager-cpp!" << std::endl;
