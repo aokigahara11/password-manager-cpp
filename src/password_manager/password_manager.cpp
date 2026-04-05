@@ -1,5 +1,7 @@
 #include "password_manager/password_manager.h"
 #include "utils/password_generator.h"
+#include "utils/input_reader.h"
+#include "utils/validator.h"
 #include <iostream>
 
 PasswordManager::PasswordManager(const std::string& db_path)
@@ -173,24 +175,33 @@ std::tuple<std::string, std::string, std::string, int> PasswordManager::findReco
     int choice;
     std::string request;
     std::cout << "1 - Service\n2 - Mail\n3 - Password\nChoice parameter for search: ";
-    std::cin >> choice;
+    
+    if (!InputReader::readIntInRange(choice, 1, 3)) {
+        while (!InputReader::readIntInRange(choice, 1, 3)) {
+            std::cout << "Try again: ";
+        }
+    }
 
     if (choice == 1) {
         std::cout << "Enter service: ";
-        std::cin >> request;
+        while (!InputReader::readLine(request) || !Validator::IsValidService(request)) {
+            std::cout << "Try again enter service: ";
+        }
     } else if (choice == 2) {
         std::cout << "Enter mail: ";
-        std::cin >> request;
+        while (!InputReader::readLine(request) || !Validator::IsValidEmail(request)) {
+            std::cout << "Try again enter mail: ";
+        }
     } else if (choice == 3) {
         std::cout << "Enter password: ";
-        std::cin >> request;
+        while (!InputReader::readLine(request) || request.empty()) {
+            std::cout << "Try again enter password: ";
+        }
+
+        Validator::IsVaildPassword(request);
+
     } else {
         std::cout << "Invalid parameter choice." << std::endl;
-        return {"", "", "", -1};
-    }
-
-    if (request.empty()) {
-        std::cout << "Search request cannot be empty." << std::endl;
         return {"", "", "", -1};
     }
 
@@ -233,31 +244,44 @@ std::tuple<std::string, std::string, std::string, int> PasswordManager::findReco
 
 std::tuple<std::string, std::string, std::string> PasswordManager::enterRecord() {
     std::string service, mail, password;
+    int length_password = 0;
+    
+    // Ввод и валидация названия сервиса
     std::cout << "Enter service: ";
-    std::cin >> service;
-    if (service.empty()) {
-        std::cout << "Service cannot be empty." << std::endl;
-        return {"", "", ""};
+    while (!InputReader::readLine(service) || !Validator::IsValidService(service)) {
+        std::cout << "Enter service: ";
     }
 
+    // Ввод и валидация почты
     std::cout << "Enter mail: ";
-    std::cin >> mail;
-    if (mail.empty()) {
-        std::cout << "Mail cannot be empty." << std::endl;
-        return {"", "", ""};
+    while (!InputReader::readLine(mail) || !Validator::IsValidEmail(mail)) {
+        std::cout << "Enter mail: ";
     }
 
-    int length_password;
-    while (true) {
-        std::cout << "Enter length of password: ";
-        std::cin >> length_password;
-        if (length_password >= 8) {
-            break;
+    // Выбор способа создания пароля
+    int choice_password;
+    std::cout << "Enter your password or generate? (1 - enter manually, 2 - generate): ";
+    
+    while (!InputReader::readIntInRange(choice_password, 1, 2)) {
+        std::cout << "Try again (1 - enter manually, 2 - generate): ";
+    }
+
+    if (choice_password == 1) {
+        // Ручной ввод пароля
+        std::cout << "Enter your password: ";
+        while (!InputReader::readLine(password) || !Validator::IsVaildPassword(password)) {
+            std::cout << "Enter your password: ";
         }
-        std::cout << "Password length must be at least 8 characters. Please try again." << std::endl;
+    } else {
+        // Генерация пароля
+        std::cout << "Enter password length: ";
+        while (!InputReader::readInt(length_password) || !Validator::IsVaildPasswordLength(length_password)) {
+            std::cout << "Enter password length (8-128): ";
+        }
+        password = PasswordGenerator::generatePassword(length_password);
+        std::cout << "Generated password: " << password << std::endl;
     }
-
-    password = PasswordGenerator::generatePassword(length_password);
+    
     return {service, mail, password};
 }
 
@@ -268,11 +292,11 @@ void PasswordManager::updateRecord(int id, const std::string& field, const std::
     }
 
     std::string sql;
-    if (field == "SERVICE") {
+    if (field == "SERVICE" || field == "service") {
         sql = "UPDATE passwords SET service = ? WHERE id = ?;";
-    } else if (field == "MAIL") {
+    } else if (field == "MAIL" || field == "mail") {
         sql = "UPDATE passwords SET mail = ? WHERE id = ?;";
-    } else if (field == "PASS") {
+    } else if (field == "PASS" || field == "password") {
         sql = "UPDATE passwords SET password = ? WHERE id = ?;";
     } else {
         std::cout << "Invalid field." << std::endl;
