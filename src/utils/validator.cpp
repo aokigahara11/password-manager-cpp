@@ -1,6 +1,24 @@
 #include <iostream>
 #include "utils/validator.h"
 
+// Проверка что строка содержит хотя бы одну букву
+bool Validator::CheckLetter(const std::string& line) {
+    int count_letter = 0;
+    
+    for (char c : line) {
+        if (std::isalpha(c)) {
+            count_letter++;
+        }
+    }
+
+    if (count_letter == 0) {
+        std::cout << "Line does not contain letters. Please try again." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
 // Проверка валидности названия сервиса
 bool Validator::IsValidService(const std::string& service) {
     // Строка не пустая
@@ -21,18 +39,26 @@ bool Validator::IsValidService(const std::string& service) {
         return false;
     }
 
+    if (!CheckLetter(service)) {
+        return false;
+    }
+
     return true;
 }
 
 // Проверка валидности почты (понимаем, что пользователь может вести не почту, а логин от сервиса, поэтому не требуем наличия '@')
-bool Validator::IsValidEmail(std::string mail) {
+bool Validator::IsValidEmail(const std::string mail) {
     if (mail.length() < 3 || mail.length() > 128) {
         std::cout << "Mail must be at least 3 and at most 128 characters long. Please try again." << std::endl;
         return false;
     }
+
+    if (!CheckLetter(mail)) {
+        return false;
+    }
+    
     return true;
 }
-
 
 // Проверка валидности длины пароля (генератор)
 bool Validator::IsVaildPasswordLength(int length) {
@@ -47,6 +73,10 @@ bool Validator::IsVaildPasswordLength(int length) {
 bool Validator::IsVaildPassword(const std::string& password) {
     if (password.length() < 8 || password.length() > 128) {
         std::cout << "Password length must be between 8 and 128 characters. Please try again." << std::endl;
+        return false;
+    }
+
+    if (!CheckLetter(password)) {
         return false;
     }
     
