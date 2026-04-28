@@ -3,11 +3,16 @@
 
 #include <tuple>
 #include <string>
+
+#ifndef SQLITE_HAS_CODEC
+#define SQLITE_HAS_CODEC
+#endif
+
 #include <sqlite3/sqlite3.h>
 
 class PasswordManager {
 public:
-    PasswordManager(const std::string& db_path = "../src/data/passwords.db");
+    PasswordManager(const std::string& db_path, const std::string& encryptionKey);
     ~PasswordManager();
 
     void addRecord(const std::string& service, const std::string& mail, const std::string& password);
@@ -22,8 +27,8 @@ public:
 private:
     sqlite3* db_;
     std::string db_path_;
-
-    bool openDatabase();
+    
+    bool openDatabase(const std::string& key);
     bool createTable();
     bool executeNonQuery(const std::string& sql) const;
     int countRecords() const;

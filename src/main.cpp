@@ -22,10 +22,10 @@ int main() {
         }
     }
 
-    // Инициализация менеджера паролей с путём к БД
-    PasswordManager pm("../src/data/passwords.db");
+    std::string master_key = FileManager::readMasterKeyFile(master_key_file);
     
-    // Запуск главного меню UI
+    PasswordManager pm("../src/data/passwords.db", master_key);
+    
     UI::MainMenu(pm);
     
     return 0;

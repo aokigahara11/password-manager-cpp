@@ -4,10 +4,17 @@
 #include "utils/validator.h"
 #include <iostream>
 
-PasswordManager::PasswordManager(const std::string& db_path)
+#include "password_manager/password_manager.h"
+#include "utils/password_generator.h"
+#include "utils/input_reader.h"
+#include "utils/validator.h"
+#include <iostream>
+
+PasswordManager::PasswordManager(const std::string& db_path, const std::string& encryptionKey)
     : db_(nullptr), db_path_(db_path) {
-    if (!openDatabase()) {
-        std::cerr << "Failed to open database '" << db_path_ << "'." << std::endl;
+    
+    if (!openDatabase(encryptionKey)) {
+        std::cerr << "Failed to open encrypted database '" << db_path_ << "'." << std::endl;
     } else if (!createTable()) {
         std::cerr << "Failed to create passwords table." << std::endl;
     }
@@ -20,7 +27,7 @@ PasswordManager::~PasswordManager() {
     }
 }
 
-bool PasswordManager::openDatabase() {
+bool PasswordManager::openDatabase(const std::string& key) {
     int rc = sqlite3_open(db_path_.c_str(), &db_);
     if (rc != SQLITE_OK) {
         std::cerr << "Can't open database: " << sqlite3_errmsg(db_) << std::endl;
@@ -28,6 +35,32 @@ bool PasswordManager::openDatabase() {
         db_ = nullptr;
         return false;
     }
+    
+    if (!key.empty()) {
+        rc = sqlite3_key(db_, key.c_str(), static_cast<int>(key.length()));
+        if (rc != SQLITE_OK) {
+            std::cerr << "Failed to set encryption key: " << sqlite3_errmsg(db_) << std::endl;
+            sqlite3_close(db_);
+            db_ = nullptr;
+            return false;
+        }
+        
+        const char* test_sql = "SELECT count(*) FROM sqlite_master;";
+        sqlite3_stmt* stmt = nullptr;
+        rc = sqlite3_prepare_v2(db_, test_sql, -1, &stmt, nullptr);
+        if (rc == SQLITE_OK) {
+            rc = sqlite3_step(stmt);
+            sqlite3_finalize(stmt);
+        }
+        
+        if (rc != SQLITE_ROW && rc != SQLITE_DONE) {
+            std::cerr << "Invalid encryption key!" << std::endl;
+            sqlite3_close(db_);
+            db_ = nullptr;
+            return false;
+        }
+    }
+    
     return true;
 }
 

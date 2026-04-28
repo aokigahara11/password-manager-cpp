@@ -21,6 +21,8 @@
 #define SQLITE_AMALGAMATION 1
 #ifndef SQLITE_PRIVATE
 # define SQLITE_PRIVATE static
+#define SQLCIPHER_DEBUG 0
+#define SQLITE_SQLCIPHER_DEBUG0
 #endif
 /************** Begin file sqliteInt.h ***************************************/
 /*
@@ -105569,7 +105571,6 @@ SQLITE_API void sqlite3_activate_see(const char* in) {
 }
 
 SQLITE_API int sqlite3_key(sqlite3 *db, const void *pKey, int nKey) {
-  sqlcipher_log(SQLCIPHER_LOG_DEBUG, "sqlite3_key: db=%p", db);
   return sqlite3_key_v2(db, "main", pKey, nKey);
 }
 
