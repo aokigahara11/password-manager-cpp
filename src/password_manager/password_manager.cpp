@@ -3,21 +3,14 @@
 #include "utils/input_reader.h"
 #include "utils/validator.h"
 #include <iostream>
+#include <filesystem>
 
-#include "password_manager/password_manager.h"
-#include "utils/password_generator.h"
-#include "utils/input_reader.h"
-#include "utils/validator.h"
-#include <iostream>
-
-PasswordManager::PasswordManager(const std::string& db_path, const std::string& encryptionKey)
+PasswordManager::PasswordManager(const std::string& db_path)
     : db_(nullptr), db_path_(db_path) {
-    
-    if (!openDatabase(encryptionKey)) {
-        std::cerr << "Failed to open encrypted database '" << db_path_ << "'." << std::endl;
-    } else if (!createTable()) {
-        std::cerr << "Failed to create passwords table." << std::endl;
-    }
+}
+
+bool PasswordManager::databaseExists() const {
+    return std::filesystem::exists(db_path_);
 }
 
 PasswordManager::~PasswordManager() {
@@ -25,6 +18,18 @@ PasswordManager::~PasswordManager() {
         sqlite3_close(db_);
         db_ = nullptr;
     }
+}
+
+bool PasswordManager::authenticate(const std::string& key) {
+    if (!openDatabase(key)) {
+        std::cerr << "Authentication failed: Invalid master key." << std::endl;
+        return false;
+    }
+    if (!createTable()) {
+        std::cerr << "Failed to create passwords table." << std::endl;
+        return false;
+    }
+    return true;
 }
 
 bool PasswordManager::openDatabase(const std::string& key) {
@@ -40,21 +45,6 @@ bool PasswordManager::openDatabase(const std::string& key) {
         rc = sqlite3_key(db_, key.c_str(), static_cast<int>(key.length()));
         if (rc != SQLITE_OK) {
             std::cerr << "Failed to set encryption key: " << sqlite3_errmsg(db_) << std::endl;
-            sqlite3_close(db_);
-            db_ = nullptr;
-            return false;
-        }
-        
-        const char* test_sql = "SELECT count(*) FROM sqlite_master;";
-        sqlite3_stmt* stmt = nullptr;
-        rc = sqlite3_prepare_v2(db_, test_sql, -1, &stmt, nullptr);
-        if (rc == SQLITE_OK) {
-            rc = sqlite3_step(stmt);
-            sqlite3_finalize(stmt);
-        }
-        
-        if (rc != SQLITE_ROW && rc != SQLITE_DONE) {
-            std::cerr << "Invalid encryption key!" << std::endl;
             sqlite3_close(db_);
             db_ = nullptr;
             return false;

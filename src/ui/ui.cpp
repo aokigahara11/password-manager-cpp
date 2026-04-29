@@ -1,9 +1,7 @@
 #include <utils/input_reader.h>
 #include <ui/ui.h>
 #include "password_manager/password_manager.h"
-#include "password_manager/master_key_manager.h"
 #include "utils/password_generator.h"
-#include "password_manager/file_manager.h"
 #include "utils/validator.h"
 #include <iostream>
 #include <limits>

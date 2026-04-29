@@ -12,8 +12,11 @@
 
 class PasswordManager {
 public:
-    PasswordManager(const std::string& db_path, const std::string& encryptionKey);
+    PasswordManager(const std::string& db_path);
     ~PasswordManager();
+
+    bool authenticate(const std::string& key);
+    bool databaseExists() const;
 
     void addRecord(const std::string& service, const std::string& mail, const std::string& password);
     void showRecords() const;
