@@ -39,7 +39,7 @@ private:
     std::string generated_password_preview;
     std::string manage_message;
     std::vector<PasswordManager::Record> records;
-    std::vector<std::string> activity_log;
+    std::vector<std::string> console_log;
     
     // UI methods
     void renderAuthenticationWindow(); // окно ввода мастер-ключа

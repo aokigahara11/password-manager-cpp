@@ -9,8 +9,6 @@
 #include <algorithm>
 #include <cctype>
 
-// ===================== IMGUI APPLICATION =====================
-
 ImGuiApp::ImGuiApp(PasswordManager& pm) : m_pm(pm) {
     // Инициализируем буферы ввода нулями
     memset(service_input, 0, sizeof(service_input));
@@ -19,7 +17,7 @@ ImGuiApp::ImGuiApp(PasswordManager& pm) : m_pm(pm) {
     memset(search_input, 0, sizeof(search_input));
     memset(master_key_input, 0, sizeof(master_key_input));
     generated_password_preview.clear();
-    activity_log.push_back("Application started");
+    console_log.push_back("Application started");
 }
 
 ImGuiApp::~ImGuiApp() {
@@ -27,59 +25,96 @@ ImGuiApp::~ImGuiApp() {
 
 void ImGuiApp::setupImGuiStyle() {
     ImGui::StyleColorsDark();
-    
-    // Настройка пользовательской темы и цветов
+
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
     
-    // Цвет фона окон
-    colors[ImGuiCol_WindowBg] = ImVec4(0.15f, 0.20f, 0.35f, 1.00f);
-    colors[ImGuiCol_ChildBg] = ImVec4(0.10f, 0.15f, 0.30f, 1.00f);
-    colors[ImGuiCol_PopupBg] = ImVec4(0.15f, 0.20f, 0.35f, 1.00f);
+    // Основные цвета
+    colors[ImGuiCol_WindowBg] = ImVec4(0.18f, 0.18f, 0.18f, 1.00f);      // #2E2E2E
+    colors[ImGuiCol_ChildBg] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);       // #333333
+    colors[ImGuiCol_PopupBg] = ImVec4(0.18f, 0.18f, 0.18f, 1.00f);      // #2E2E2E
     
     // Цвета кнопок
-    colors[ImGuiCol_Button] = ImVec4(0.20f, 0.35f, 0.60f, 1.00f);
-    colors[ImGuiCol_ButtonHovered] = ImVec4(0.25f, 0.45f, 0.75f, 1.00f);
-    colors[ImGuiCol_ButtonActive] = ImVec4(0.15f, 0.25f, 0.50f, 1.00f);
+    colors[ImGuiCol_Button] = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);        // #5A5A5A
+    colors[ImGuiCol_ButtonHovered] = ImVec4(0.45f, 0.45f, 0.45f, 1.00f); // #737373
+    colors[ImGuiCol_ButtonActive] = ImVec4(0.55f, 0.55f, 0.55f, 1.00f);  // #8C8C8C
     
     // Цвета заголовков
-    colors[ImGuiCol_Header] = ImVec4(0.20f, 0.35f, 0.60f, 0.76f);
-    colors[ImGuiCol_HeaderHovered] = ImVec4(0.25f, 0.45f, 0.75f, 0.86f);
-    colors[ImGuiCol_HeaderActive] = ImVec4(0.15f, 0.25f, 0.50f, 0.90f);
+    colors[ImGuiCol_Header] = ImVec4(0.30f, 0.30f, 0.30f, 0.76f);        // #4D4D4D
+    colors[ImGuiCol_HeaderHovered] = ImVec4(0.40f, 0.40f, 0.40f, 0.86f); // #666666
+    colors[ImGuiCol_HeaderActive] = ImVec4(0.50f, 0.50f, 0.50f, 0.90f);  // #808080
     
-    // Цвета полей ввода
-    colors[ImGuiCol_FrameBg] = ImVec4(0.05f, 0.10f, 0.20f, 1.00f);
-    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.10f, 0.15f, 0.30f, 1.00f);
-    colors[ImGuiCol_FrameBgActive] = ImVec4(0.15f, 0.25f, 0.45f, 1.00f);
+    // Цвета полей ввод
+    colors[ImGuiCol_FrameBg] = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);       // #1F1F1F
+    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.15f, 0.15f, 0.15f, 1.00f);// #262626
+    colors[ImGuiCol_FrameBgActive] = ImVec4(0.18f, 0.18f, 0.18f, 1.00f); // #2E2E2E
+
+    // Цвет активной кнопки
+    colors[ImGuiCol_CheckMark] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
+    
+    // Цвет фона радио при наведении
+    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
+    
+    // Цвет фона радио-кнопки когда активна
+    colors[ImGuiCol_FrameBgActive] = ImVec4(0.35f, 0.35f, 0.35f, 1.0f);
+
+    // Цвет ползунка
+    colors[ImGuiCol_SliderGrab] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
+    colors[ImGuiCol_SliderGrabActive] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
     
     // Цвета строки заголовка окна
-    colors[ImGuiCol_TitleBg] = ImVec4(0.10f, 0.15f, 0.25f, 1.00f);
-    colors[ImGuiCol_TitleBgActive] = ImVec4(0.15f, 0.25f, 0.45f, 1.00f);
+    colors[ImGuiCol_TitleBg] = ImVec4(0.15f, 0.15f, 0.15f, 1.00f);       // #262626
+    colors[ImGuiCol_TitleBgActive] = ImVec4(0.25f, 0.25f, 0.25f, 1.00f); // #404040
     
-    // Цвета текста - белый
-    colors[ImGuiCol_Text] = ImVec4(0.90f, 0.95f, 1.00f, 1.00f);
-    colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.60f, 0.75f, 1.00f);
+    // Цвета текста
+    colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);          // Чистый белый
+    colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);  // Светло-серый
     
     // Цвета разделителей
-    colors[ImGuiCol_Separator] = ImVec4(0.25f, 0.40f, 0.65f, 0.50f);
-    colors[ImGuiCol_SeparatorHovered] = ImVec4(0.30f, 0.50f, 0.80f, 0.78f);
-    colors[ImGuiCol_SeparatorActive] = ImVec4(0.35f, 0.60f, 0.90f, 1.00f);
+    colors[ImGuiCol_Separator] = ImVec4(0.30f, 0.30f, 0.30f, 0.50f);     // #4D4D4D
+    colors[ImGuiCol_SeparatorHovered] = ImVec4(0.40f, 0.40f, 0.40f, 0.78f);
+    colors[ImGuiCol_SeparatorActive] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
     
     // Цвета границ
-    colors[ImGuiCol_Border] = ImVec4(0.20f, 0.35f, 0.60f, 0.50f);
+    colors[ImGuiCol_Border] = ImVec4(0.30f, 0.30f, 0.30f, 0.50f);        // #4D4D4D
     
-    // Скругления
-    style.WindowRounding = 5.0f;
-    style.FrameRounding = 4.0f;
-    style.GrabRounding = 4.0f;
+    // Цвета для выделения элементов
+    colors[ImGuiCol_ResizeGrip] = ImVec4(0.35f, 0.35f, 0.35f, 0.60f);
+    colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.45f, 0.45f, 0.45f, 1.00f);
+    colors[ImGuiCol_ResizeGripActive] = ImVec4(0.55f, 0.55f, 0.55f, 1.00f);
+    
+    // Цвета для скроллбаров
+    colors[ImGuiCol_ScrollbarBg] = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);    // #1F1F1F
+    colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);  // #5A5A5A
+    colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.45f, 0.45f, 0.45f, 1.00f);
+    colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.55f, 0.55f, 0.55f, 1.00f);
+    
+    // Цвета для вкладок
+    colors[ImGuiCol_Tab] = ImVec4(0.25f, 0.25f, 0.25f, 1.00f);           // #404040
+    colors[ImGuiCol_TabHovered] = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);    // #5A5A5A
+    colors[ImGuiCol_TabActive] = ImVec4(0.45f, 0.45f, 0.45f, 1.00f);     // #737373
+    colors[ImGuiCol_TabUnfocused] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);  // #333333
+    colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.30f, 0.30f, 0.30f, 1.00f);
+    
+    // Скругления углов
+    style.WindowRounding = 4.0f;
+    style.FrameRounding = 3.0f;
+    style.GrabRounding = 3.0f;
+    style.ScrollbarRounding = 3.0f;
+    style.TabRounding = 3.0f;
+    
+    // Настройка отступов
+    style.WindowPadding = ImVec2(8.0f, 8.0f);
+    style.FramePadding = ImVec2(6.0f, 4.0f);
+    style.ItemSpacing = ImVec2(6.0f, 4.0f);
+    style.ItemInnerSpacing = ImVec2(4.0f, 4.0f);
 }
 
 void ImGuiApp::appendLog(const std::string& message) {
-    // Добавляем заметку в лог действий, если строка не пуста
     if (message.empty()) return;
-    activity_log.push_back(message);
-    if (activity_log.size() > 20) { // Только первые 20 сообщений
-        activity_log.erase(activity_log.begin());
+    console_log.push_back(message);
+    if (console_log.size() > 20) { // Только первые 20 сообщений
+        console_log.erase(console_log.begin());
     }
 }
 
@@ -128,14 +163,20 @@ void ImGuiApp::renderAuthenticationWindow() {
     if (!show_auth_window) return;
 
     ImGui::SetNextWindowPos(ImVec2(300, 220), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(500, 260), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(470, 160), ImGuiCond_FirstUseEver);
 
     if (ImGui::Begin("Authentication", &show_auth_window, ImGuiWindowFlags_NoResize)) {
-        ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "Password Manager Secure Access");
+        ImGui::TextWrapped("Check Master-Key");
         ImGui::Separator();
         ImGui::Spacing();
-        ImGui::TextWrapped("Enter your master key to continue.");
-        ImGui::InputText("Master key", master_key_input, IM_ARRAYSIZE(master_key_input), ImGuiInputTextFlags_Password);
+
+        if (m_pm.databaseExists()) {
+            ImGui::TextWrapped("Enter your master key to unlock the password manager.");
+        } else {
+            ImGui::TextWrapped("No database found. Create a new master key to initialize the password manager.");
+        }
+
+        ImGui::InputText("##Input key", master_key_input, IM_ARRAYSIZE(master_key_input), ImGuiInputTextFlags_Password);
 
         if (!auth_message.empty()) {
             ImGui::TextColored(ImVec4(0.95f, 0.7f, 0.2f, 1.0f), "%s", auth_message.c_str());
@@ -165,8 +206,8 @@ void ImGuiApp::renderAuthenticationWindow() {
 
 void ImGuiApp::renderAddRecordPanel() {
     // Панель добавления новой записи
-    ImGui::BeginChild("AddPanel", ImVec2(0, 320), true);
-    ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "Add New Record");
+    ImGui::BeginChild("AddPanel", ImVec2(0, 300), true);
+    ImGui::TextWrapped("Add New Record");
     ImGui::Separator();
 
     ImGui::Text("Service name:");
@@ -191,7 +232,7 @@ void ImGuiApp::renderAddRecordPanel() {
         if (generated_password_preview.empty()) {
             generated_password_preview = PasswordGenerator::generatePassword(password_length);
         }
-        ImGui::InputText("Generated password", const_cast<char*>(generated_password_preview.c_str()), generated_password_preview.size() + 1, ImGuiInputTextFlags_ReadOnly);
+        ImGui::InputText("##Generated password", const_cast<char*>(generated_password_preview.c_str()), generated_password_preview.size() + 1, ImGuiInputTextFlags_ReadOnly);
     } else {
         ImGui::Text("Password:");
         ImGui::InputText("##password", password_input, IM_ARRAYSIZE(password_input));
@@ -224,7 +265,7 @@ void ImGuiApp::renderAddRecordPanel() {
 void ImGuiApp::renderRecordsPanel() {
     // Панель со списком сохранённых записей
     ImGui::BeginChild("RecordsPanel", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
-    ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "Saved Records");
+    ImGui::TextWrapped("Saved Records");
     ImGui::Separator();
 
     if (records.empty()) {
@@ -267,7 +308,7 @@ void ImGuiApp::renderRecordsPanel() {
 void ImGuiApp::renderManagePanel() {
     // Панель управления: поиск, обновление, удаление и логи
     ImGui::BeginChild("ManagePanel", ImVec2(0, 0), true);
-    ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "Search & Manage");
+    ImGui::TextWrapped("Search & Manage");
     ImGui::Separator();
     ImGui::Text("Filter records by service, email, or password:");
     ImGui::InputText("##search_filter", search_input, IM_ARRAYSIZE(search_input));
@@ -327,10 +368,10 @@ void ImGuiApp::renderManagePanel() {
     }
 
     ImGui::Separator();
-    ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "Activity");
+    ImGui::TextWrapped("Console");
     if (ImGui::BeginChild("LogChild", ImVec2(0, 220), true)) {
         ImGui::PushTextWrapPos(0.0f);
-        for (const auto& entry : activity_log) {
+        for (const auto& entry : console_log) {
             ImGui::TextWrapped(entry.c_str());
         }
         ImGui::PopTextWrapPos();
@@ -346,7 +387,7 @@ void ImGuiApp::renderDashboard() {
     ImGui::SetNextWindowSize(viewport->Size);
 
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
-    if (ImGui::Begin("Password Manager", &show_main_window, window_flags)) {
+    if (ImGui::Begin("password-manager-cpp", &show_main_window, window_flags)) {
         ImGui::SameLine();
         if (ImGui::Button("Refresh")) {
             refreshRecords();

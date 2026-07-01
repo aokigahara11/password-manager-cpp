@@ -103,10 +103,10 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 // Запускает ImGui-приложение: создаёт окно, инициализирует DirectX и запускает главный цикл.
 bool RunImGuiApp(PasswordManager& pm)
 {
-    const std::string window_name = "Password Manager";
-    const std::wstring window_title = L"Password Manager";
+    const std::wstring window_class = L"password-manager-cpp";
+    const std::wstring window_title = L"password-manager-cpp";
 
-    WNDCLASSEXW wc = { sizeof(WNDCLASSEXW), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, window_title.c_str(), NULL };
+    WNDCLASSEXW wc = { sizeof(WNDCLASSEXW), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, window_class.c_str(), NULL };
     ::RegisterClassExW(&wc);
     HWND hwnd = ::CreateWindowW(wc.lpszClassName, window_title.c_str(), WS_OVERLAPPEDWINDOW, 100, 100, 1400, 900, NULL, NULL, wc.hInstance, NULL);
 
@@ -114,7 +114,6 @@ bool RunImGuiApp(PasswordManager& pm)
         std::cerr << "Failed to create window!" << std::endl;
         return false;
     }
-
     if (CreateDeviceD3D(hwnd) < 0)
     {
         CleanupDeviceD3D();
@@ -152,17 +151,16 @@ bool RunImGuiApp(PasswordManager& pm)
             continue;
         }
 
-        // Начало нового кадра ImGui
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        // Запускаем обновление пользовательского интерфейса
         if (!app.run()) done = true;
 
-        // Рендеринг ImGui на экран
         ImGui::Render();
-        const float clear_color_with_alpha[4] = { 0.15f, 0.20f, 0.35f, 1.00f };
+        
+        const float clear_color_with_alpha[4] = { 0.18f, 0.18f, 0.18f, 1.00f };
+        
         g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
         g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, clear_color_with_alpha);
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
