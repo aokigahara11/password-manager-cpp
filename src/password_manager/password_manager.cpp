@@ -123,38 +123,49 @@ void PasswordManager::addRecord(const std::string& service, const std::string& m
     sqlite3_finalize(stmt);
 }
 
+std::vector<PasswordManager::Record> PasswordManager::getRecords() const {
+    std::vector<Record> result;
+    if (!db_) {
+        return result;
+    }
+
+    const char* sql = "SELECT id, service, mail, password FROM passwords ORDER BY id;";
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        std::cerr << "Failed to prepare select statement: " << sqlite3_errmsg(db_) << std::endl;
+        return result;
+    }
+
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+        Record record;
+        record.id = sqlite3_column_int(stmt, 0);
+        record.service = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)) ? reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)) : "";
+        record.mail = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)) ? reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)) : "";
+        record.password = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3)) ? reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3)) : "";
+        result.push_back(record);
+    }
+
+    sqlite3_finalize(stmt);
+    return result;
+}
+
 void PasswordManager::showRecords() const {
     if (!db_) {
         std::cerr << "Database is not open." << std::endl;
         return;
     }
 
-    const char* sql = "SELECT id, service, mail, password FROM passwords;";
-    sqlite3_stmt* stmt = nullptr;
-    int rc = sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr);
-    if (rc != SQLITE_OK) {
-        std::cerr << "Failed to prepare select statement: " << sqlite3_errmsg(db_) << std::endl;
+    const auto records = getRecords();
+    if (records.empty()) {
+        std::cout << "No records found." << std::endl;
         return;
     }
 
-    bool any = false;
     std::cout << "ID\tService\tMail\tPassword" << std::endl;
-    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
-        any = true;
-        int id = sqlite3_column_int(stmt, 0);
-        const char* service = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
-        const char* mail = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
-        const char* password = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
-        showRecord(id,
-                   service ? service : "",
-                   mail ? mail : "",
-                   password ? password : "");
+    for (const auto& record : records) {
+        showRecord(record.id, record.service, record.mail, record.password);
     }
-
-    if (!any) {
-        std::cout << "No records found." << std::endl;
-    }
-    sqlite3_finalize(stmt);
 }
 
 void PasswordManager::deleteAllRecords() {
@@ -165,10 +176,10 @@ void PasswordManager::deleteAllRecords() {
     }
 }
 
-void PasswordManager::deleteRecord(int id) {
+bool PasswordManager::deleteRecord(int id) {
     if (!db_) {
         std::cerr << "Database is not open." << std::endl;
-        return;
+        return false;
     }
 
     const char* sql = "DELETE FROM passwords WHERE id = ?;";
@@ -176,17 +187,18 @@ void PasswordManager::deleteRecord(int id) {
     int rc = sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
         std::cerr << "Failed to prepare delete statement: " << sqlite3_errmsg(db_) << std::endl;
-        return;
+        return false;
     }
 
     sqlite3_bind_int(stmt, 1, id);
     rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
     if (rc == SQLITE_DONE && sqlite3_changes(db_) > 0) {
         std::cout << "Record deleted successfully!" << std::endl;
-    } else {
-        std::cout << "Invalid record id!" << std::endl;
+        return true;
     }
-    sqlite3_finalize(stmt);
+    std::cout << "Invalid record id!" << std::endl;
+    return false;
 }
 
 std::tuple<std::string, std::string, std::string, int> PasswordManager::findRecord() {
@@ -308,10 +320,10 @@ std::tuple<std::string, std::string, std::string> PasswordManager::enterRecord()
     return {service, mail, password};
 }
 
-void PasswordManager::updateRecord(int id, const std::string& field, const std::string& newValue) {
+bool PasswordManager::updateRecord(int id, const std::string& field, const std::string& newValue) {
     if (!db_) {
         std::cerr << "Database is not open." << std::endl;
-        return;
+        return false;
     }
 
     std::string sql;
@@ -323,25 +335,26 @@ void PasswordManager::updateRecord(int id, const std::string& field, const std::
         sql = "UPDATE passwords SET password = ? WHERE id = ?;";
     } else {
         std::cout << "Invalid field." << std::endl;
-        return;
+        return false;
     }
 
     sqlite3_stmt* stmt = nullptr;
     int rc = sqlite3_prepare_v2(db_, sql.c_str(), -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
         std::cerr << "Failed to prepare update statement: " << sqlite3_errmsg(db_) << std::endl;
-        return;
+        return false;
     }
 
     sqlite3_bind_text(stmt, 1, newValue.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_int(stmt, 2, id);
     rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
     if (rc == SQLITE_DONE && sqlite3_changes(db_) > 0) {
         std::cout << "Record updated successfully." << std::endl;
-    } else {
-        std::cout << "Invalid record id or no change made." << std::endl;
+        return true;
     }
-    sqlite3_finalize(stmt);
+    std::cout << "Invalid record id or no change made." << std::endl;
+    return false;
 }
 
 bool PasswordManager::isEmpty() const {
