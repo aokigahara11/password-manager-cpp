@@ -25,6 +25,7 @@ public:
 
     bool authenticate(const std::string& key);
     bool databaseExists() const;
+    bool deleteDatabase(const std::string& db_path);
 
     void addRecord(const std::string& service, const std::string& mail, const std::string& password);
     std::vector<Record> getRecords() const;

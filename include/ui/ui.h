@@ -25,6 +25,8 @@ private:
     bool show_main_window = true;
     bool generate_password = true;
     int selected_record_id = -1;
+    int max_auth_attempts = 5;
+    int auth_attempts = 0;
     
     char master_key_input[256] = "";
     char service_input[128] = "";

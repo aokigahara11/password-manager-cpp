@@ -159,8 +159,8 @@ void ImGuiApp::filterRecords(const std::string& query) {
 }
 
 void ImGuiApp::renderAuthenticationWindow() {
-    // Окно авторизации: ввод мастер-ключа перед показом основного UI
-    if (!show_auth_window) return;
+    if (!show_auth_window)
+        return;
 
     ImGui::SetNextWindowPos(ImVec2(300, 220), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(470, 160), ImGuiCond_FirstUseEver);
@@ -176,31 +176,68 @@ void ImGuiApp::renderAuthenticationWindow() {
             ImGui::TextWrapped("No database found. Create a new master key to initialize the password manager.");
         }
 
-        ImGui::InputText("##Input key", master_key_input, IM_ARRAYSIZE(master_key_input), ImGuiInputTextFlags_Password);
+        ImGui::InputText("##Input key", master_key_input,
+                         IM_ARRAYSIZE(master_key_input),
+                         ImGuiInputTextFlags_Password);
 
         if (!auth_message.empty()) {
-            ImGui::TextColored(ImVec4(0.95f, 0.7f, 0.2f, 1.0f), "%s", auth_message.c_str());
+            ImGui::TextColored(
+                ImVec4(0.95f, 0.7f, 0.2f, 1.0f),
+                "%s",
+                auth_message.c_str()
+            );
         }
 
         ImGui::Spacing();
+
         if (ImGui::Button("Unlock", ImVec2(220, 35))) {
             std::string key(master_key_input);
+            const std::string db_path = "../src/data/passwords.db";
+
             if (m_pm.authenticate(key)) {
                 authenticated = true;
                 show_auth_window = false;
+                auth_attempts = 0;
+                auth_message.clear();
+
                 appendLog("Access granted");
                 refreshRecords();
             } else {
-                auth_message = "Incorrect master key. Try again.";
+                auth_attempts++;
+                int attempts_left = max_auth_attempts - auth_attempts;
+
+                if (attempts_left > 0) {
+                    auth_message = "Incorrect master key. Attempts left: " +
+                                   std::to_string(attempts_left);
+                } else {
+                    auth_message = "Maximum number of attempts exceeded.";
+                }
+
                 appendLog("Failed authentication attempt");
+
+                if (auth_attempts >= max_auth_attempts) {
+                    appendLog("Maximum number of attempts exceeded.");
+
+                    if (m_pm.deleteDatabase(db_path)) {
+                        appendLog("[INFO] Database deleted.");
+                    } else {
+                        appendLog("[ERROR] Failed to delete database.");
+                    }
+
+                    quit_requested = true;
+                }
             }
+
             memset(master_key_input, 0, sizeof(master_key_input));
         }
+
         ImGui::SameLine();
+
         if (ImGui::Button("Exit", ImVec2(220, 35))) {
             quit_requested = true;
         }
     }
+
     ImGui::End();
 }
 
@@ -245,9 +282,11 @@ void ImGuiApp::renderAddRecordPanel() {
         std::string pwd = generate_password ? generated_password_preview : std::string(password_input);
 
         if (service_str.empty() || email_str.empty() || pwd.empty()) {
-            appendLog("Failed to save: fill all fields");
+            appendLog("[WARNING]: The fields are empty");
         } else if (!Validator::IsValidService(service_str) || !Validator::IsValidEmail(email_str)) {
-            appendLog("Failed to save: invalid service or email");
+            appendLog("[ERROR]: The service or email input is incorrect, either too few characters or the 128-character limit has been reached");
+        } else if (!Validator::IsVaildPassword(pwd)) {
+            appendLog("[ERROR]: Password must be at least 8 characters long and contain letters and numbers.");
         } else {
             m_pm.addRecord(service_str, email_str, pwd);
             appendLog("Saved record for " + service_str);
@@ -296,7 +335,7 @@ void ImGuiApp::renderRecordsPanel() {
                 ImGui::TextUnformatted(record.password.c_str());
                 if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
                     ClipboardManager::copyToClipboard(record.password);
-                    appendLog("Password copied for " + record.service);
+                    appendLog("Password copied for " + record.service + " (" + record.mail + ")");
                 }
             }
             ImGui::EndTable();
@@ -330,7 +369,7 @@ void ImGuiApp::renderManagePanel() {
         ImGui::InputText("Password", selected_password_input, IM_ARRAYSIZE(selected_password_input));
         if (ImGui::Button("Copy Password")) {
             ClipboardManager::copyToClipboard(std::string(selected_password_input));
-            appendLog("Password copied to clipboard");
+            appendLog("[INFO] Password copied to clipboard");
         }
         ImGui::SameLine();
         if (ImGui::Button("Update Record")) {
@@ -339,10 +378,10 @@ void ImGuiApp::renderManagePanel() {
                 m_pm.updateRecord(selected_record_id, "PASS", std::string(selected_password_input))) {
                 refreshRecords();
                 manage_message = "Record updated";
-                appendLog("Record updated");
+                appendLog("[INFO] Record updated");
             } else {
                 manage_message = "Update failed";
-                appendLog("Failed to update record");
+                appendLog("[ERROR] Failed to update record");
             }
         }
         ImGui::SameLine();
@@ -354,10 +393,10 @@ void ImGuiApp::renderManagePanel() {
                 memset(selected_password_input, 0, sizeof(selected_password_input));
                 refreshRecords();
                 manage_message = "Record deleted";
-                appendLog("Record deleted");
+                appendLog("[INFO] Record deleted");
             } else {
                 manage_message = "Delete failed";
-                appendLog("Failed to delete record");
+                appendLog("[ERROR] Failed to delete record");
             }
         }
     } else {
@@ -391,13 +430,13 @@ void ImGuiApp::renderDashboard() {
         ImGui::SameLine();
         if (ImGui::Button("Refresh")) {
             refreshRecords();
-            appendLog("Records refreshed");
+            appendLog("[INFO] Records refreshed");
         }
         ImGui::SameLine();
         if (ImGui::Button("Delete All")) {
             m_pm.deleteAllRecords();
             refreshRecords();
-            appendLog("All records deleted");
+            appendLog("[INFO] All records deleted");
         }
         ImGui::SameLine();
         if (ImGui::Button("Exit")) {
@@ -408,10 +447,10 @@ void ImGuiApp::renderDashboard() {
         if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("Menu")) {
                 if (ImGui::MenuItem("Add Record")) {
-                    appendLog("Add Record panel selected");
+                    appendLog("[INFO] Add Record panel selected");
                 }
                 if (ImGui::MenuItem("Search & Manage")) {
-                    appendLog("Search panel selected");
+                    appendLog("[INFO] Search panel selected");
                 }
                 ImGui::EndMenu();
             }

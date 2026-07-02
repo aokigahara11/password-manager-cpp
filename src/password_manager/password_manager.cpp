@@ -54,6 +54,22 @@ bool PasswordManager::openDatabase(const std::string& key) {
     return true;
 }
 
+bool PasswordManager::deleteDatabase(const std::string& db_path)
+{
+    if (db_) {
+        sqlite3_close(db_);
+        db_ = nullptr;
+    }
+
+    try {
+        return std::filesystem::remove(db_path);
+    }
+    catch (const std::filesystem::filesystem_error& e) {
+        std::cerr << "Failed to delete database: " << e.what() << '\n';
+        return false;
+    }
+}
+
 bool PasswordManager::createTable() {
     const char* sql = "CREATE TABLE IF NOT EXISTS passwords ("
                       "id INTEGER PRIMARY KEY AUTOINCREMENT, "
